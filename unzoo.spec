@@ -1,5 +1,5 @@
-Summary:	unZOO - extract, test and view ZOO archives.
-Summary(pl):	unZOO - rozpakowuje, testuje i przegl±da archiwa ZOO.
+Summary:	unZOO - extract, test and view ZOO archives
+Summary(pl):	unZOO - rozpakowuje, testuje i przegl±da archiwa ZOO
 Name:		unzoo
 Version:	4.4
 Release:	1
@@ -16,7 +16,7 @@ developed for extracting, testing and viewing the contents of archives created
 with the ZOO archiver.
 
 %description -l pl
-UnACE jest programem freeware, rozpowszechnianym wraz z kodem ¼ród³owym, 
+unzoo jest programem freeware, rozpowszechnianym wraz z kodem ¼ród³owym,
 przeznaczonym do rozpakowywania, testowania oraz przegl±dania zawarto¶ci
 archiwów stworzonych przez program ZOO.
 
@@ -25,13 +25,13 @@ archiwów stworzonych przez program ZOO.
 gzip -dc %{SOURCE0} > unzoo.c
 
 %build
-gcc $RPM_OPT_FLAGS -DSYS_IS_UNIX unzoo.c -o unzoo
+gcc %{?debug:-O0 -g}%{!?debug:$RPM_OPT_FLAGS -s} -DSYS_IS_UNIX unzoo.c -o unzoo
 
 %install
 rm -rf $RPM_BUILD_ROOT
 install -d $RPM_BUILD_ROOT%{_bindir}
 
-install -s unzoo $RPM_BUILD_ROOT%{_bindir}
+install unzoo $RPM_BUILD_ROOT%{_bindir}
 
 %clean
 rm -rf $RPM_BUILD_ROOT
