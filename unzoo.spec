@@ -7,6 +7,7 @@ License:	Public Domain
 Group:		Applications/Archiving
 URL:		ftp://ftp.math.rwth-aachen.de/pub/gap/gap4/util/unzoo.c
 Source0:	%{name}.c.gz
+# Source0-md5:	a065edbb257c7cf44f97ef69a9467ab2
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %description
