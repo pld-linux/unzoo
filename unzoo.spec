@@ -4,28 +4,29 @@ Name:		unzoo
 Version:	4.4
 Release:	1
 Copyright:	Public Domain
-Group:		Utilities/Archiving
-Group(pl):	Narzêdzia/Archiwizacja
+Group:		Applications/Archiving
+Group(de):	Applikationen/Archivierung
+Group(pl):	Aplikacje/Archiwizacja
 URL:		ftp://ftp.math.rwth-aachen.de/pub/gap/gap4/util/unzoo.c
-Source:		unzoo.c.gz
+Source0:	%{name}.c.gz
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
 
 %description
-The unzoo utility is a Public Domain program, distributed with source code and
-developed for extracting, testing and viewing the contents of archives created
-with the ZOO archiver.
+The unzoo utility is a Public Domain program, distributed with source
+code and developed for extracting, testing and viewing the contents of
+archives created with the ZOO archiver.
 
 %description -l pl
-unzoo jest programem freeware, rozpowszechnianym wraz z kodem ¼ród³owym,
-przeznaczonym do rozpakowywania, testowania oraz przegl±dania zawarto¶ci
-archiwów stworzonych przez program ZOO.
+unzoo jest programem freeware, rozpowszechnianym wraz z kodem
+¼ród³owym, przeznaczonym do rozpakowywania, testowania oraz
+przegl±dania zawarto¶ci archiwów stworzonych przez program ZOO.
 
 %prep
 %setup -q -c -T
 gzip -dc %{SOURCE0} > unzoo.c
 
 %build
-gcc %{?debug:-O0 -g}%{!?debug:$RPM_OPT_FLAGS -s} -DSYS_IS_UNIX unzoo.c -o unzoo
+%{__cc} %{rpmcflags} %{rpmldflags} -DSYS_IS_UNIX unzoo.c -o unzoo
 
 %install
 rm -rf $RPM_BUILD_ROOT
