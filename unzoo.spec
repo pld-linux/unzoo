@@ -5,8 +5,6 @@ Version:	4.4
 Release:	1
 License:	Public Domain
 Group:		Applications/Archiving
-Group(de):	Applikationen/Archivierung
-Group(pl):	Aplikacje/Archiwizacja
 URL:		ftp://ftp.math.rwth-aachen.de/pub/gap/gap4/util/unzoo.c
 Source0:	%{name}.c.gz
 BuildRoot:	%{tmpdir}/%{name}-%{version}-root-%(id -u -n)
