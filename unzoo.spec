@@ -2,7 +2,7 @@ Summary:	unZOO - extract, test and view ZOO archives
 Summary(pl):	unZOO - rozpakowywanie, testowania i przegl±danie archiwów ZOO
 Name:		unzoo
 Version:	4.4
-Release:	2
+Release:	3
 License:	Public Domain
 Group:		Applications/Archiving
 URL:		ftp://ftp.math.rwth-aachen.de/pub/gap/gap4/util/unzoo.c
