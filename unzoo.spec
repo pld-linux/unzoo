@@ -3,7 +3,7 @@ Summary(pl):	unZOO - rozpakowuje, testuje i przegl±da archiwa ZOO
 Name:		unzoo
 Version:	4.4
 Release:	1
-Copyright:	Public Domain
+License:	Public Domain
 Group:		Applications/Archiving
 Group(de):	Applikationen/Archivierung
 Group(pl):	Aplikacje/Archiwizacja
