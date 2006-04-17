@@ -1,0 +1,225 @@
+--- unzoo-4.4.orig/unzoo.c
++++ unzoo-4.4/unzoo.c
+@@ -245,6 +245,13 @@
+ */
+ #include        <stdio.h>
+ 
++#ifdef SYS_IS_UNIX
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <string.h>
++#include <stdlib.h>
++#include <utime.h>
++#endif
+ 
+ /****************************************************************************
+ **
+@@ -613,8 +620,8 @@
+ **  members with the correct time as stored in the archive.
+ */
+ #ifdef  SYS_IS_UNIX
+-unsigned int   Secs [2];
+-#define SETF_TIME(patl,secs)    (Secs[0]=Secs[1]=(secs),!utime((patl),Secs))
++struct utimbuf Secs;
++#define SETF_TIME(patl,secs)    (Secs.actime=Secs.modtime=(secs),!utime((patl),&Secs))
+ #endif
+ #ifdef  SYS_IS_DOS_DJGPP
+ unsigned long   Secs [2];
+@@ -1265,10 +1272,12 @@
+     /* try to match the name part                                          */
+     while ( *pat != '\0' || *str != '\0' ) {
+         if      ( *pat==*str                  ) { pat++;       str++;       }
+-        else if ( *pat=='?' && ! IsSpec[*str] ) { pat++;       str++;       }
++        else if ( *pat=='?' && ! IsSpec[(unsigned int)*str] )
++            { pat++;       str++;       }
+         else if ( *pat=='?' && *str != '\0'   ) { pat++;       str++;       }
+         else if ( *pat=='*'                   ) { pos = ++pat; tmp =   str; }
+-        else if ( tmp != 0  && ! IsSpec[*tmp] ) { pat =   pos; str = ++tmp; }
++        else if ( tmp != 0  && ! IsSpec[(unsigned int)*tmp] )
++            { pat =   pos; str = ++tmp; }
+         else                                    break;
+     }
+     return *pat == '\0' && *str == '\0';
+@@ -2470,7 +2479,7 @@
+ 
+ /****************************************************************************
+ **
+-*F  ExtrArch(<bim>,<out>,<ovr>,<pre>,<arc>,<filec>,<files>) . extract members
++*F  ExtrArch(<bim>,<out>,<ovr>,<pre>,<frc>,<arc>,<filec>,<files>) . extract members
+ **
+ **  'ExtrArch' extracts the members  of the archive with  the name <arc> that
+ **  match one  of the file name  patterns '<files>[0] .. <files>[<filec>-1]'.
+@@ -2482,12 +2491,15 @@
+ **  stdout, i.e., to the screen.  and if it  is 2, the members are extracted.
+ **  If <ovr> is 0, members will not overwrite  existing files; otherwise they
+ **  will.  <pre> is a prefix that is prepended to all path names.
++**  <frc> is 1 if the user requested extraction of members even if this would
++** result in a directory traversal.
+ */
+-int             ExtrArch ( bim, out, ovr, pre, arc, filec, files )
++int             ExtrArch ( bim, out, ovr, pre, frc, arc, filec, files )
+     unsigned long       bim;
+     unsigned long       out;
+     unsigned long       ovr;
+     char *              pre;
++    unsigned long       frc;
+     char *              arc;
+     unsigned long       filec;
+     char *              files [];
+@@ -2573,6 +2585,102 @@
+             continue;
+         }
+ 
++        /* check the path for directory traversal                          */
++        if (frc != 1) {
++            /* but only if the user did not request otherwise              */
++
++            /* building the universal path of this member                  */
++            char patu [sizeof(Entry.diru) + sizeof(Entry.namu) + 2];
++            strcpy( patu, Entry.diru );
++            if ( strlen(patu) && patu[strlen(patu)-1] != '/') strcat( patu, "/" );
++            strcat( patu, (Entry.lnamu ? Entry.namu : Entry.nams) );
++
++            int found_trav = 0;
++
++            if ( strstr( patu, "/../" )) {
++                found_trav = 1;
++
++                /* remove "/../" from the path                             */
++                char tmp [sizeof(patu)];
++                char *p;
++                char *q;
++                memset(tmp, 0, sizeof(tmp));
++                q = patu;
++
++                while ( !strncmp(q, "/../", 4) ) {
++                    q += 3;
++                }
++                if (q[0] == '/') q++;
++
++                while ((p = strstr( q, "/../" )) != NULL) {
++                    if (q[0] == '/') q++;
++                    if (p > q) strncat(tmp, q, p-q);
++                    if (tmp[strlen(tmp)-1] != '/') strcat(tmp, "/");
++                    p += 3;
++                    q = p;
++                }
++                strncat(tmp, q+1, patu + strlen(patu) - q);
++                strcpy(patu, tmp);
++
++                printf("unzoo: skipped \"/../\" path component(s) in '%s'\n", Entry.patl);
++            }
++            if ( *patu == '/' && !strlen( pre ) ) {
++                found_trav = 1;
++
++                char *p = malloc(sizeof(patu));
++                char *q = p;
++                memset(p, 0, sizeof(patu));
++                strcpy(p, patu);
++                while ( q[0] == '/' ) q++;
++                strcpy(patu, q);
++                free(p);
++
++                printf("unzoo: skipped root directory path component in '%s'\n", patl);
++            }
++            if ( !strncmp( patu, "../", 3 )) {
++                found_trav = 1;
++
++                char tmp [sizeof(patu)];
++                memset(tmp, 0, sizeof(tmp));
++                strcpy(tmp, patu + 3);
++                strcpy(patu, tmp);
++
++                printf("unzoo: skipped \"../\" path component in '%s'\n", patl);
++            }
++
++            if (found_trav) {
++                /* patu contains the sanitized 'universal' path, i.e.      */
++                /* separated by '/' characters, including the file name.   */
++
++                char *f = strrchr( patu, '/' );
++                *f++ = '\0';
++                /* Now, patu points to the directory part, f to the file   */
++
++                memset( Entry.diru, 0, sizeof(Entry.diru) );
++                strncpy( Entry.diru, patu, sizeof(Entry.diru)-1 );
++                if ( Entry.lnamu > 0 ) {
++                    memset( Entry.namu, 0, sizeof(Entry.namu) );
++                    strncpy( Entry.namu, f, sizeof(Entry.namu)-1 );
++                } else {
++                    memset( Entry.nams, 0, sizeof(Entry.nams) );
++                    strncpy( Entry.nams, f, sizeof(Entry.nams)-1 );
++                }
++
++                /* convert the names to local format                       */
++                if ( Entry.system == 0 || Entry.system == 2 ) {
++                    CONV_DIRE( Entry.dirl, Entry.diru );
++                    CONV_NAME( Entry.naml, (Entry.lnamu ? Entry.namu : Entry.nams) );
++                }
++                else {
++                    strcpy( Entry.dirl, Entry.diru );
++                    strcpy( Entry.naml, (Entry.lnamu ? Entry.namu : Entry.nams) );
++                }
++                /* sizeof(patl)=512, sizeof({dirl|naml}=256} */
++                strcpy( Entry.patl, Entry.dirl );
++                strcat( Entry.patl, Entry.naml );
++            }
++        }
++
+         /* check that such a file does not already exist                   */
+         strcpy( patl, pre );  strcat( patl, Entry.patl );
+         if ( out == 2 && ovr == 0 && OpenReadFile(patl,0L) ) {
+@@ -2731,7 +2839,7 @@
+     printf("  <file>: list only files matching at least one pattern,\n");
+     printf("          '?' matches any char, '*' matches any string.\n");
+     printf("\n");
+-    printf("unzoo -x [-abnpo] [-j <prefix>] <archive>[.zoo] [<file>..]\n");
++    printf("unzoo -x [-abnpo] [-t] [-j <prefix>] <archive>[.zoo] [<file>..]\n");
+     printf("  extract the members of the archive\n");
+     printf("  -a:  extract all members as text files ");
+     printf("(not only those with !TEXT! comments)\n");
+@@ -2741,6 +2849,10 @@
+     printf("  -p:  extract to stdout\n");
+     printf("  -o:  extract over existing files\n");
+     printf("  -j:  extract to '<prefix><membername>'\n");
++    printf("  -f:  force extraction of members to their original locations\n");
++    printf("       even if this results in files extracted outside the\n");
++    printf("       working directory. THIS COULD POTENTIALLY OVERWRITE\n");
++    printf("       IMPORTANT FILES, SO USE WITH CARE!\n");
+     printf("  <file>: extract only files matching at least one pattern,\n");
+     printf("          '?' matches any char, '*' matches any string.\n");
+     return 1;
+@@ -2764,6 +2876,7 @@
+     unsigned long       bim;            /* extraction mode option          */
+     unsigned long       out;            /* output destination option       */
+     unsigned long       ovr;            /* overwrite file option           */
++    unsigned long       frc;            /* force extraction option         */
+     char *              pre;            /* prefix to prepend to path names */
+     char                argl [256];     /* interactive command line        */
+     int                 argd;           /* interactive command count       */
+@@ -2783,7 +2896,7 @@
+     do {
+ 
+         /* scan the command line arguments                                 */
+-        cmd = 1;  ver = 0;  bim = 0;  out = 2;  ovr = 0;
++        cmd = 1;  ver = 0;  bim = 0;  out = 2;  ovr = 0; frc = 0;
+         pre = "";
+         while ( 1 < argc && argv[1][0] == '-' ) {
+             if ( argv[1][2] != '\0' )  cmd = 0;
+@@ -2793,6 +2906,7 @@
+             case 'x': case 'X': if ( cmd != 0 )  cmd = 2;            break;
+             case 'a': case 'A': if ( cmd != 2 )  cmd = 0;  bim = 1;  break;
+             case 'b': case 'B': if ( cmd != 2 )  cmd = 0;  bim = 2;  break;
++            case 'f': case 'F': if ( cmd != 2 )  cmd = 0;  frc = 1; break;
+             case 'n': case 'N': if ( cmd != 2 )  cmd = 0;  out = 0;  break;
+             case 'p': case 'P': if ( cmd != 2 )  cmd = 0;  out = 1;  break;
+             case 'o': case 'O': if ( cmd != 2 )  cmd = 0;  ovr = 1;  break;
+@@ -2809,7 +2923,7 @@
+             res = ListArch( ver, argv[1],
+                             (unsigned long)argc-2, argv+2 );
+         else if ( cmd == 2 && 1 < argc )
+-            res = ExtrArch( bim, out, ovr, pre, argv[1],
++            res = ExtrArch( bim, out, ovr, pre, frc, argv[1],
+                             (unsigned long)argc-2, argv+2 );
+         else
+             res = HelpArch();
