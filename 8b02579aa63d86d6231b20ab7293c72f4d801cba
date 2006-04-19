@@ -1,0 +1,2 @@
+- fix for a directory traversal vulnerability (bug #5489, CVE-2004-2190)
+- release 4
