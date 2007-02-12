@@ -1,5 +1,5 @@
 Summary:	unZOO - extract, test and view ZOO archives
-Summary(pl):	unZOO - rozpakowywanie, testowanie i przegl±danie archiwów ZOO
+Summary(pl.UTF-8):   unZOO - rozpakowywanie, testowanie i przeglÄ…danie archiwÃ³w ZOO
 Name:		unzoo
 Version:	4.4
 Release:	4
@@ -16,10 +16,10 @@ The unzoo utility is a Public Domain program, distributed with source
 code and developed for extracting, testing and viewing the contents of
 archives created with the ZOO archiver.
 
-%description -l pl
+%description -l pl.UTF-8
 unzoo jest programem freeware, rozpowszechnianym wraz z kodem
-¼ród³owym, przeznaczonym do rozpakowywania, testowania oraz
-przegl±dania zawarto¶ci archiwów stworzonych przez program ZOO.
+ÅºrÃ³dÅ‚owym, przeznaczonym do rozpakowywania, testowania oraz
+przeglÄ…dania zawartoÅ›ci archiwÃ³w stworzonych przez program ZOO.
 
 %prep
 %setup -q -c -T
