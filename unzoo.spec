@@ -24,7 +24,7 @@ przeglądania zawartości archiwów stworzonych przez program ZOO.
 %prep
 %setup -q -c -T
 gzip -dc %{SOURCE0} > unzoo.c
-%patch0 -p1
+%patch -P0 -p1
 
 %build
 %{__cc} %{rpmcflags} %{rpmldflags} -DSYS_IS_UNIX unzoo.c -o unzoo
